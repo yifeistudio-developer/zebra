@@ -1,6 +1,6 @@
 package com.yifeistudio.com.yifeistudio.zebra
 
-import java.util.concurrent.TimeUnit
+import kotlin.time.Duration
 
 class RedisCoordinator : Coordinator {
 
@@ -16,8 +16,7 @@ class RedisCoordinator : Coordinator {
      */
     override fun mutex(
         syncKey: String,
-        timeout: Int,
-        timeUnit: TimeUnit,
+        timeout: Duration,
         func: () -> Int
     ): Int {
         TODO("Not yet implemented")
@@ -42,7 +41,7 @@ class RedisCoordinator : Coordinator {
     /**
      * 获取唯一ID
      */
-    override fun acquireWorkerId(key: String): Int {
+    override fun acquireWorkerId(appKey: String, workerIdentifier: String): Int {
         TODO("Not yet implemented")
     }
 

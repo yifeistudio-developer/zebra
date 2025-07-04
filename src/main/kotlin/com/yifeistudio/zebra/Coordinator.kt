@@ -1,6 +1,6 @@
 package com.yifeistudio.com.yifeistudio.zebra
 
-import java.util.concurrent.TimeUnit
+import kotlin.time.Duration
 
 
 interface Coordinator {
@@ -15,8 +15,7 @@ interface Coordinator {
      * 同步控制
      */
     fun mutex(syncKey: String,
-              timeout: Int,
-              timeUnit: TimeUnit,
+              timeout: Duration,
               func: () -> Int): Int
 
     /**
@@ -35,6 +34,6 @@ interface Coordinator {
      * 获取唯一ID
      *
      */
-    fun acquireWorkerId(key: String): Int
+    fun acquireWorkerId(appKey: String, workerIdentifier: String): Int
 
 }

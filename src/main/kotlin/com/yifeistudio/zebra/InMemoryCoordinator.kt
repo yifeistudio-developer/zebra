@@ -1,16 +1,21 @@
 package com.yifeistudio.com.yifeistudio.zebra
 
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
-import java.util.concurrent.TimeUnit
+import org.slf4j.LoggerFactory
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TimeSource
 
 
-class StandaloneCoordinator : Coordinator {
+class InMemoryCoordinator : Coordinator {
 
     private var pool = mutableMapOf<String, IntArray>()
 
     private val cache = mutableMapOf<String, Int>()
+
+    private val log = LoggerFactory.getLogger(InMemoryCoordinator::class.java)
 
     /**
      * 初始化号码池
@@ -18,7 +23,8 @@ class StandaloneCoordinator : Coordinator {
     override fun initializePool(appKey: String, size: Int) {
         val arr = pool[appKey]
         if (arr == null) {
-            pool[appKey] = intArrayOf(size)
+            log.debug("Initialize pool for app $appKey $size")
+            pool[appKey] = IntArray(size)
         }
     }
 
@@ -28,19 +34,27 @@ class StandaloneCoordinator : Coordinator {
      */
     override fun mutex(
         syncKey: String,
-        timeout: Int,
-        timeUnit: TimeUnit,
+        timeout: Duration,
         func: () -> Int
     ): Int {
-
-        return func()
+        return runBlocking {
+            val mutex = Mutex()
+            val start = TimeSource.Monotonic.markNow()
+            while (!mutex.tryLock()) {
+                if (start.elapsedNow() > timeout) {
+                    throw IllegalStateException("try lock after $timeout failed.")
+                }
+                delay(1.seconds)
+            }
+            return@runBlocking func()
+        }
     }
 
     /**
      * 获取已分配节点集合
      */
     override fun getAllocatedWorkers(appKey: String): Set<String> {
-        return HashSet()
+        return cache.keys
     }
 
     /**
@@ -51,22 +65,25 @@ class StandaloneCoordinator : Coordinator {
             val id = cache[it]
             if (id != null) {
                 val arr = pool[appKey]
-                arr?.set(id - 1, 0)
+                if (arr != null) {
+                    arr[id - 1] = 0
+                }
             }
+            cache.remove(it)
         }
     }
 
     /**
      * 获取唯一ID
      */
-    override fun acquireWorkerId(key: String): Int {
-        val arr = pool[key]
+    override fun acquireWorkerId(appKey: String, workerIdentifier: String): Int {
+        val arr = pool[appKey]
         val size = arr?.size
         for (i in 0 until size!!) {
             if (arr[i] == 0) {
                 arr[i] = 1
                 val id = i + 1
-                cache[key] = id
+                cache[workerIdentifier] = id
                 return id
             }
         }

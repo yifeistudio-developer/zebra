@@ -10,21 +10,7 @@ import kotlin.test.Test
 class WorkerIdAllocatorTests {
 
     @Test
-    fun testStandaloneNextId() {
-        val coordinator = InMemoryCoordinator()
-        val serviceDiscovery = InMemoryServiceDiscovery()
-        val workerIdAllocator = WorkerIdAllocator(coordinator = coordinator, serviceDiscovery = serviceDiscovery)
-        // mock service register and deregister
-        while (true) {
-            val worker = "zebra-${Random.nextInt()})"
-            serviceDiscovery.registerWorker(worker)
-
-        }
-    }
-
-
-    @Test
-    fun test() = runBlocking {
+    fun testInMemory() = runBlocking {
         val jobList = mutableListOf<Job>()
         val coordinator = InMemoryCoordinator()
         val serviceDiscovery = InMemoryServiceDiscovery()
@@ -48,12 +34,13 @@ class WorkerIdAllocatorTests {
                             println("node deregistered: $workerIdentifier")
                         }
                     }
-                    delay(Random.nextLong(1000, 5000)) // 模拟不稳定节点
+                    // 模拟不稳定节点
+                    delay(Random.nextLong(1000, 5000))
                 }
             }
         }
         jobList.joinAll()
-        println("allocated workerIds: ${coordinator.getAllocatedWorkers(appKey)}")
+        println("allocated workers: ${coordinator.getAllocatedWorkers(appKey)}")
         println("active workers: ${serviceDiscovery.getActiveWorkers(appKey)}")
     }
 

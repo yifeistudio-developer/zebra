@@ -1,6 +1,8 @@
 package com.yifeistudio.com.yifeistudio.zebra
 
-
+/**
+ * 服务发现组件
+ */
 interface ServiceDiscovery {
 
     /**

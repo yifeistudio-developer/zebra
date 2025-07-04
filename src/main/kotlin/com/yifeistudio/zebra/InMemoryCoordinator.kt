@@ -23,8 +23,8 @@ class InMemoryCoordinator : Coordinator {
     override fun initializePool(appKey: String, size: Int) {
         val arr = pool[appKey]
         if (arr == null) {
-            log.debug("Initialize pool for app $appKey $size")
             pool[appKey] = IntArray(size)
+            log.debug("Initialize pool for app $appKey $size")
         }
     }
 
@@ -45,6 +45,7 @@ class InMemoryCoordinator : Coordinator {
                     throw IllegalStateException("try lock after $timeout failed.")
                 }
                 delay(1.seconds)
+                log.debug("try lock failed. trying to acquire locker for $syncKey again")
             }
             return@runBlocking func()
         }
@@ -68,8 +69,9 @@ class InMemoryCoordinator : Coordinator {
                 if (arr != null) {
                     arr[id - 1] = 0
                 }
+                cache.remove(it)
+                log.debug("recycle worker $it for $appKey $id")
             }
-            cache.remove(it)
         }
     }
 
@@ -84,6 +86,7 @@ class InMemoryCoordinator : Coordinator {
                 arr[i] = 1
                 val id = i + 1
                 cache[workerIdentifier] = id
+                log.debug("acquire worker $id for $appKey $workerIdentifier: $id")
                 return id
             }
         }

@@ -2,14 +2,15 @@ package com.yifeistudio.com.yifeistudio.zebra
 
 import kotlin.time.Duration
 
-
+/**
+ * 分布式协调器
+ */
 interface Coordinator {
 
     /**
      * 初始化号码池
      */
     fun initializePool(appKey: String, size: Int)
-
 
     /**
      * 同步控制

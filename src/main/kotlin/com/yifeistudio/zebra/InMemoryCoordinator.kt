@@ -71,6 +71,7 @@ class InMemoryCoordinator : Coordinator {
             pool[serviceName] = IntArray(1024)
             log.debug("Initialize pool for app $serviceName 1024")
         }
+        if (cache[serviceName] != null) return cache[serviceName]!!
         val arr = pool[serviceName]
         val size = arr?.size
         for (i in 0 until size!!) {

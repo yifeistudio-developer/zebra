@@ -20,7 +20,7 @@ class K8sServiceDiscovery(
         return try {
             client.pods()
                 .inNamespace(namespace)
-                .withLabelSelector("app=zebra")
+                .withLabelSelector(serviceName)
                 .list()
                 .items
                 .mapNotNull { it.status?.podIP }

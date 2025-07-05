@@ -44,7 +44,7 @@ class K8sServiceDiscoveryTests {
 
         every { client.pods() } returns podOps
         every { podOps.inNamespace("default") } returns nsOps
-        every { nsOps.withLabelSelector("app=zebra") } returns filteredOps
+        every { nsOps.withLabelSelector("zebra") } returns filteredOps
         every { filteredOps.list() } returns podList
 
         // 3. 调用测试目标

@@ -1,49 +1,66 @@
 package com.yifeistudio.com.yifeistudio.zebra
 
+import org.springframework.data.redis.core.StringRedisTemplate
 import kotlin.time.Duration
+import org.slf4j.LoggerFactory
+import org.springframework.data.redis.core.script.DefaultRedisScript
+import kotlin.time.toJavaDuration
 
-class RedisCoordinator : Coordinator {
+class RedisCoordinator(
+    private val redisTemplate: StringRedisTemplate,
+    private val poolSize: Int = 1024) : Coordinator {
 
-    /**
-     * 初始化号码池
-     */
-    override fun initializePool(appKey: String, size: Int) {
-        TODO("Not yet implemented")
+    private val logger = LoggerFactory.getLogger(javaClass)
+
+    override fun mutex(syncKey: String, timeout: Duration, func: () -> Int): Int {
+        val lockKey = "zebra:mutex:$syncKey"
+        val lockValue = Thread.currentThread().name + System.currentTimeMillis()
+        val acquired = redisTemplate.opsForValue().setIfAbsent(lockKey, lockValue, timeout.toJavaDuration())
+        if (acquired != true) throw IllegalStateException("Could not acquire lock for $syncKey")
+        return try {
+            func()
+        } finally {
+            val script = DefaultRedisScript(
+                """
+                if redis.call("get", KEYS[1]) == ARGV[1] then
+                    return redis.call("del", KEYS[1])
+                else
+                    return 0
+                end
+                """.trimIndent(),
+                String::class.java
+            )
+            redisTemplate.execute(script, listOf(lockKey), lockValue)
+        }
     }
 
-    /**
-     * 同步控制
-     */
-    override fun mutex(
-        syncKey: String,
-        timeout: Duration,
-        func: () -> Int
-    ): Int {
-        TODO("Not yet implemented")
+    override fun getAllocatedWorkers(serviceName: String): Set<String> {
+        val key = "zebra:allocated:$serviceName"
+        return redisTemplate.opsForHash<String, String>().entries(key).keys.toSet()
     }
 
-    /**
-     * 获取已分配节点集合
-     *
-     */
-    override fun getAllocatedWorkers(appKey: String): Set<String> {
-        TODO("Not yet implemented")
+    override fun recycleAllocateIds(serviceName: String, offlineWorkers: Set<String>) {
+        val key = "zebra:allocated:$serviceName"
+        if (offlineWorkers.isNotEmpty()) {
+            redisTemplate.opsForHash<String, String>().delete(key, *offlineWorkers.toTypedArray())
+            logger.info("[RedisCoordinator] Recycled workers: $offlineWorkers")
+        }
     }
 
-    /**
-     * 回收下线节点的workerId
-     *
-     */
-    override fun recycleAllocateIds(appKey: String, offlineWorkers: Set<String>) {
-        TODO("Not yet implemented")
+    override fun acquireWorkerId(serviceName: String, workerIdentifier: String): Int {
+        val key = "zebra:allocated:$serviceName"
+        val map = redisTemplate.opsForHash<String, String>().entries(key)
+        val existing = map.entries.find { it.value == workerIdentifier }?.key?.toIntOrNull()
+        if (existing != null) return existing
+
+        val used = map.keys.mapNotNull { it.toIntOrNull() }.toSet()
+        for (i in 0 until poolSize) {
+            if (i !in used) {
+                redisTemplate.opsForHash<String, String>().put(key, i.toString(), workerIdentifier)
+                logger.info("[RedisCoordinator] Assigned workerId=$i to $workerIdentifier")
+                return i
+            }
+        }
+        throw IllegalStateException("No available workerId for service $serviceName")
     }
-
-    /**
-     * 获取唯一ID
-     */
-    override fun acquireWorkerId(appKey: String, workerIdentifier: String): Int {
-        TODO("Not yet implemented")
-    }
-
-
 }

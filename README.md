@@ -13,7 +13,7 @@ Zebra 是一个轻量级、高性能的分布式 Worker-Id 分配服务，专为
 •	服务发现（ServiceDiscovery）：提供当前活跃节点集合（如基于 Kubernetes、Redis、etcd 等）。
 
 算法流程
-1.	对 appKey + syncKey 进行互斥加锁（带超时）。
+1.	对 serviceName + syncKey 进行互斥加锁（带超时）。
 2.	查询当前活跃节点集合 activeWorkers。
 3.	获取已分配的 allocatedWorkers。
 4.	识别并回收不活跃的 WorkerId：allocated - activeWorkers。
@@ -72,4 +72,4 @@ fun workerIdCoordinator(): WorkerIdCoordinator = RedisCoordinator()
 
 License
 
-MIT License © 2025 Zebra Authors
+MIT License © 2025 yifeistudio.com

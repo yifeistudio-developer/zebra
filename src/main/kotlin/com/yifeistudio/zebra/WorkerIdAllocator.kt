@@ -3,32 +3,39 @@ package com.yifeistudio.com.yifeistudio.zebra
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
-
-class WorkerIdAllocator(val coordinator: Coordinator,
-                        val serviceDiscovery: ServiceDiscovery) {
+/**
+ * 分布式workerId分配器
+ */
+class WorkerIdAllocator(private val coordinator: Coordinator,
+                        private val serviceDiscovery: ServiceDiscovery) {
 
     /**
      * 获取唯一WorkerId
      *
-     * 默认同步10秒
+     * 默认同步5秒
      */
-    fun nextId(syncKey: String): Int {
-        return nextId(syncKey, syncKey)
+    fun acquireWorkerId(syncKey: String): Int {
+        return acquireWorkerId(syncKey, syncKey)
     }
 
 
     /**
      * 获取唯一WorkerId
      *
-     * 默认同步10秒
+     * 默认同步5秒
      */
-    fun nextId(syncKey: String, appKey: String): Int {
+    fun acquireWorkerId(syncKey: String, serviceName: String): Int {
         val workerIdentifier = serviceDiscovery.getWorkerIdentifier()
-        return nextId(syncKey, appKey, workerIdentifier)
+        return acquireWorkerId(syncKey, serviceName, workerIdentifier)
     }
 
-    fun nextId(syncKey: String, appKey: String, workerIdentifier: String): Int {
-        return nextId(syncKey, appKey, workerIdentifier, 5.seconds)
+    /**
+     * 获取唯一WorkerId
+     *
+     * 默认同步5秒
+     */
+    fun acquireWorkerId(syncKey: String, serviceName: String, workerIdentifier: String): Int {
+        return acquireWorkerId(syncKey, serviceName, workerIdentifier, 5.seconds)
     }
 
 
@@ -36,14 +43,13 @@ class WorkerIdAllocator(val coordinator: Coordinator,
      * 获取唯一WorkerId
      *
      */
-    fun nextId(syncKey: String, appKey: String, workerIdentifier: String, timeout: Duration): Int {
+    fun acquireWorkerId(syncKey: String, serviceName: String, workerIdentifier: String, timeout: Duration): Int {
         return coordinator.mutex(syncKey, timeout) {
-            val activeWorkers = serviceDiscovery.getActiveWorkers(appKey)
-            coordinator.initializePool(appKey, 1024)
-            val allocatedWorkers = coordinator.getAllocatedWorkers(appKey)
+            val activeWorkers = serviceDiscovery.getActiveWorkers(serviceName)
+            val allocatedWorkers = coordinator.getAllocatedWorkers(serviceName)
             val offlineWorkers = allocatedWorkers.filter { !activeWorkers.contains(it) }.toSet()
-            coordinator.recycleAllocateIds(appKey, offlineWorkers)
-            return@mutex coordinator.acquireWorkerId(appKey, workerIdentifier)
+            coordinator.recycleAllocateIds(serviceName, offlineWorkers)
+            return@mutex coordinator.acquireWorkerId(serviceName, workerIdentifier)
         }
     }
 

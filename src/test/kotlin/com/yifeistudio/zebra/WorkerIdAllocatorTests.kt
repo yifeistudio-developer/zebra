@@ -15,19 +15,19 @@ class WorkerIdAllocatorTests {
         val coordinator = InMemoryCoordinator()
         val serviceDiscovery = InMemoryServiceDiscovery()
         val workerIdAllocator = WorkerIdAllocator(coordinator = coordinator, serviceDiscovery = serviceDiscovery)
-        val appKey = "zebra"
-        repeat(1) { _ ->
+        val serviceName = "zebra"
+        repeat(10) { _ ->
             jobList += launch(Dispatchers.Default) {
                 repeat(10) {
                     // 随机模拟节点上下线
                     if (Random.nextBoolean()) {
                         val workerIdentifier = serviceDiscovery.getWorkerIdentifier()
                         serviceDiscovery.registerWorker(workerIdentifier)
-                        val nextId = workerIdAllocator.nextId(appKey, appKey, workerIdentifier)
+                        val nextId = workerIdAllocator.acquireWorkerId(serviceName, serviceName, workerIdentifier)
                         println("node registered: $workerIdentifier worker id: $nextId")
                         delay(Random.nextLong(1000, 3000))
                     } else {
-                        val activeWorkers = serviceDiscovery.getActiveWorkers(appKey)
+                        val activeWorkers = serviceDiscovery.getActiveWorkers(serviceName)
                         if (activeWorkers.isNotEmpty()) {
                             val workerIdentifier = activeWorkers.random()
                             serviceDiscovery.deregisterWorker(workerIdentifier)
@@ -40,8 +40,8 @@ class WorkerIdAllocatorTests {
             }
         }
         jobList.joinAll()
-        println("allocated workers: ${coordinator.getAllocatedWorkers(appKey)}")
-        println("active workers: ${serviceDiscovery.getActiveWorkers(appKey)}")
+        println("allocated workers: ${coordinator.getAllocatedWorkers(serviceName)}")
+        println("active workers: ${serviceDiscovery.getActiveWorkers(serviceName)}")
     }
 
 }

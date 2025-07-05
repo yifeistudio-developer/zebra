@@ -12,7 +12,7 @@ class InMemoryServiceDiscovery: ServiceDiscovery {
     /**
      * 获取当前活跃节点
      */
-    override fun getActiveWorkers(appKey: String): Set<String> {
+    override fun getActiveWorkers(serviceName: String): Set<String> {
         return activeWorkers
     }
 

@@ -18,18 +18,6 @@ class InMemoryCoordinator : Coordinator {
     private val log = LoggerFactory.getLogger(InMemoryCoordinator::class.java)
 
     /**
-     * 初始化号码池
-     */
-    override fun initializePool(appKey: String, size: Int) {
-        val arr = pool[appKey]
-        if (arr == null) {
-            pool[appKey] = IntArray(size)
-            log.debug("Initialize pool for app $appKey $size")
-        }
-    }
-
-
-    /**
      * 同步控制
      */
     override fun mutex(
@@ -54,23 +42,23 @@ class InMemoryCoordinator : Coordinator {
     /**
      * 获取已分配节点集合
      */
-    override fun getAllocatedWorkers(appKey: String): Set<String> {
+    override fun getAllocatedWorkers(serviceName: String): Set<String> {
         return cache.keys
     }
 
     /**
      * 回收下线节点的workerId
      */
-    override fun recycleAllocateIds(appKey: String, offlineWorkers: Set<String>) {
+    override fun recycleAllocateIds(serviceName: String, offlineWorkers: Set<String>) {
         offlineWorkers.forEach {
             val id = cache[it]
             if (id != null) {
-                val arr = pool[appKey]
+                val arr = pool[serviceName]
                 if (arr != null) {
                     arr[id - 1] = 0
                 }
                 cache.remove(it)
-                log.debug("recycle worker $it for $appKey $id")
+                log.debug("recycle worker $it for $serviceName $id")
             }
         }
     }
@@ -78,19 +66,23 @@ class InMemoryCoordinator : Coordinator {
     /**
      * 获取唯一ID
      */
-    override fun acquireWorkerId(appKey: String, workerIdentifier: String): Int {
-        val arr = pool[appKey]
+    override fun acquireWorkerId(serviceName: String, workerIdentifier: String): Int {
+        if (pool[serviceName] == null) {
+            pool[serviceName] = IntArray(1024)
+            log.debug("Initialize pool for app $serviceName 1024")
+        }
+        val arr = pool[serviceName]
         val size = arr?.size
         for (i in 0 until size!!) {
             if (arr[i] == 0) {
                 arr[i] = 1
                 val id = i + 1
                 cache[workerIdentifier] = id
-                log.debug("acquire worker $id for $appKey $workerIdentifier: $id")
+                log.debug("acquire worker $id for $serviceName $workerIdentifier: $id")
                 return id
             }
         }
-        return -1
+        throw IllegalStateException("Could not acquire worker $workerIdentifier")
     }
 
 }

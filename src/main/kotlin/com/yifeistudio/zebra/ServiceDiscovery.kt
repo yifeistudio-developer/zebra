@@ -8,7 +8,7 @@ interface ServiceDiscovery {
     /**
      * 获取当前活跃节点
      */
-    fun getActiveWorkers(appKey: String): Set<String>
+    fun getActiveWorkers(serviceName: String): Set<String>
 
     /**
      * 获取当前节点识别码

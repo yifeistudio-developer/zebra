@@ -28,7 +28,7 @@ class RedisCoordinator(
                     return 0
                 end
                 """.trimIndent(),
-                String::class.java
+                Long::class.java
             )
             redisTemplate.execute(script, listOf(lockKey), lockValue)
         }

@@ -7,7 +7,7 @@ import kotlinx.coroutines.*
 import kotlin.random.Random
 import kotlin.test.Test
 
-class WorkerIdAllocatorTests {
+class InMemoryWorkerIdAllocatorTests {
 
     @Test
     fun testInMemory() = runBlocking {

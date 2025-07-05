@@ -19,7 +19,15 @@ dependencies {
     compileOnly("com.alibaba.nacos:nacos-client:3.0.2")
     compileOnly("org.springframework.boot:spring-boot-starter-data-redis:3.5.3")
 
+    testCompileOnly("com.alibaba.nacos:nacos-client:3.0.2")
+    testImplementation("io.mockk:mockk:1.14.4")
     testImplementation(kotlin("test"))
+    testImplementation("io.fabric8:kubernetes-client:7.3.1")
+    testImplementation("org.springframework.boot:spring-boot-starter-data-redis:3.5.3")
+    testImplementation("org.testcontainers:testcontainers:1.21.3")
+    testImplementation("org.testcontainers:junit-jupiter:1.21.3")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:6.0.0-M1")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.0.0-M1")
 }
 
 tasks.test {
